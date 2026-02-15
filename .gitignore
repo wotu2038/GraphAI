@@ -1,0 +1,182 @@
+# ==================== 用户指定的目录 ====================
+.claude/
+docs/
+.cursor/
+GraphAI-backend/backend/uploads/
+# scripts目录：排除测试和调试脚本，保留必要的工具脚本
+GraphAI-backend/backend/scripts/test_*.py
+GraphAI-backend/backend/scripts/check_*.py
+GraphAI-backend/backend/scripts/clear_*.py
+
+# ==================== 环境变量文件 ====================
+.env
+.env.local
+.env.*.local
+# 保留示例文件
+!.env.example
+
+# ==================== Python ====================
+# 字节码
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 虚拟环境
+.venv/
+venv/
+ENV/
+env/
+
+# 测试和覆盖率
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# ==================== Node.js / 前端 ====================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 构建产物
+dist/
+build/
+.vite/
+.next/
+out/
+
+# 前端缓存
+.cache/
+.parcel-cache/
+
+# ==================== IDE 和编辑器 ====================
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ==================== 操作系统 ====================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ==================== 日志文件 ====================
+*.log
+logs/
+*.log.*
+
+# ==================== 数据库文件 ====================
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# ==================== 临时文件 ====================
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ==================== Docker ====================
+# Docker 数据卷（如果使用本地卷）
+docker-data/
+.docker/
+
+# ==================== 其他 ====================
+# 备份文件
+*.backup
+*.old
+
+# 压缩文件（如果包含敏感数据）
+*.zip
+*.tar.gz
+*.rar
+
+# 证书和密钥文件
+*.pem
+*.key
+*.crt
+*.cert
+!*.example
+
+# 配置文件（如果包含敏感信息）
+config.local.*
+settings.local.*
+
+# ==================== 项目特定 ====================
+# Cognee 系统文件
+.cognee_system/
+.cognee/
+
+# Milvus 数据
+milvus_data/
+
+# Neo4j 数据（如果使用本地数据卷）
+neo4j_data/
+neo4j_logs/
+
+# MySQL 数据（如果使用本地数据卷）
+mysql_data/
+
+# Redis 数据（如果使用本地数据卷）
+redis_data/
+
+# 任务队列数据
+celery_data/
+
+# 上传的文件（已在上面指定，这里再次确认）
+GraphAI-backend/backend/uploads/*
+!GraphAI-backend/backend/uploads/.gitkeep
+
+# 测试和调试脚本（排除测试脚本，保留必要的工具脚本）
+GraphAI-backend/backend/scripts/test_*.py
+GraphAI-backend/backend/scripts/check_*.py
+GraphAI-backend/backend/scripts/clear_*.py
+# 保留必要的工具脚本
+!GraphAI-backend/backend/scripts/start_backend.sh
+!GraphAI-backend/backend/scripts/init_neo4j_indexes.py
+!GraphAI-backend/backend/scripts/monitor_cognee_logs.sh
