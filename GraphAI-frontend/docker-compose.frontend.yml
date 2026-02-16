@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     build:
@@ -11,6 +9,10 @@ services:
     container_name: graph-ai-frontend
     ports:
       - "3008:80"
+    # 添加 host.docker.internal 映射（Linux Docker 需要）
+    # 这样 nginx.conf 中的 host.docker.internal 才能正常工作
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./frontend:/app
       - /app/node_modules
