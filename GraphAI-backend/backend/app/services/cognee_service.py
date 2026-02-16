@@ -2919,7 +2919,12 @@ class CogneeService:
                 from app.core.neo4j_client import neo4j_client
                 
                 # 步骤1: 先更新DocumentChunk节点的group_id（如果doc_id和version已提供）
+                # 添加详细的参数检查日志
+                logger.info(f"🔍 DocumentChunk更新参数检查: doc_id={doc_id} (type={type(doc_id).__name__}), version={version} (type={type(version).__name__}), upload_id={upload_id} (type={type(upload_id).__name__})")
+                logger.info(f"🔍 条件检查结果: doc_id and version and upload_id = {bool(doc_id and version and upload_id)}")
+                
                 if doc_id and version and upload_id:
+                    logger.info(f"🔍 准备更新DocumentChunk节点: doc_id={doc_id}, version={version}, upload_id={upload_id}, group_id={group_id}")
                     update_document_chunk_query = """
                     MATCH (dc:DocumentChunk)
                     WHERE '__Node__' IN labels(dc)
@@ -2943,8 +2948,41 @@ class CogneeService:
                     updated_chunk_count = chunk_update_result[0].get("updated_count", 0) if chunk_update_result else 0
                     if updated_chunk_count > 0:
                         logger.info(f"✅ 更新了 {updated_chunk_count} 个DocumentChunk节点的group_id（memify()执行后）")
+                    else:
+                        # 检查为什么更新返回 0
+                        check_query = """
+                        MATCH (dc:DocumentChunk)
+                        WHERE '__Node__' IN labels(dc)
+                          AND ('DocumentChunk' IN labels(dc) OR 'Chunk' IN labels(dc))
+                          AND (dc.doc_id IS NULL OR dc.group_id IS NULL)
+                        RETURN count(dc) as count
+                        """
+                        check_result = neo4j_client.execute_query(check_query)
+                        available_count = check_result[0].get("count", 0) if check_result else 0
+                        logger.warning(f"⚠️ DocumentChunk节点更新返回0（满足条件的节点数={available_count}，可能原因：节点已存在这些属性或查询条件不匹配）")
+                else:
+                    logger.warning(f"⚠️ DocumentChunk节点更新跳过（参数检查失败: doc_id={doc_id}, version={version}, upload_id={upload_id}）")
                 
                 # 步骤2: 更新TextSummary节点的group_id（通过made_from关系找到DocumentChunk，复制group_id）
+                # 先检查TextSummary节点和made_from关系
+                check_ts_query = """
+                MATCH (ts:TextSummary)
+                WHERE '__Node__' IN labels(ts)
+                RETURN count(ts) as total_count
+                """
+                check_ts_result = neo4j_client.execute_query(check_ts_query)
+                ts_total_count = check_ts_result[0].get("total_count", 0) if check_ts_result else 0
+                
+                check_relation_query = """
+                MATCH (ts:TextSummary)-[r:made_from]->(dc:DocumentChunk)
+                WHERE '__Node__' IN labels(ts) AND '__Node__' IN labels(dc)
+                   AND dc.group_id = $group_id
+                RETURN count(r) as relation_count
+                """
+                check_relation_result = neo4j_client.execute_query(check_relation_query, {"group_id": group_id})
+                relation_count = check_relation_result[0].get("relation_count", 0) if check_relation_result else 0
+                logger.info(f"🔍 检查TextSummary节点更新条件: TextSummary总数={ts_total_count}, made_from关系数={relation_count}, group_id={group_id}")
+                
                 update_text_summary_query = """
                 MATCH (ts:TextSummary)-[:made_from]->(dc:DocumentChunk)
                 WHERE '__Node__' IN labels(ts) AND '__Node__' IN labels(dc)
@@ -2962,6 +3000,8 @@ class CogneeService:
                 
                 if updated_text_summary_count > 0:
                     logger.info(f"✅ 更新了 {updated_text_summary_count} 个TextSummary节点的group_id（memify()执行后）")
+                else:
+                    logger.warning(f"⚠️ TextSummary节点更新返回0（TextSummary总数={ts_total_count}，made_from关系数={relation_count}，可能原因：关系不存在或DocumentChunk未设置group_id）")
             except Exception as update_error:
                 logger.warning(f"⚠️ 更新DocumentChunk/TextSummary节点group_id失败: {update_error}")
             
