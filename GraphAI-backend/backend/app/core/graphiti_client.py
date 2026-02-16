@@ -137,13 +137,22 @@ def get_graphiti_instance(provider: str = "qianwen") -> Graphiti:
         raise ValueError(f"Unsupported provider: {provider}")
     
     # 配置Ollama Embedding
-    # 注意：Ollama使用OpenAI兼容的API
+    # 注意：Ollama的embedding端点是 /api/embeddings，不是 /v1/embeddings
+    # OpenAIEmbedder 会自动在 base_url 后添加 /embeddings
+    # 所以 base_url 应该是：http://host:port/api（不带 /embeddings）
+    # 最终请求：http://host:port/api/embeddings
+    ollama_base_url = settings.OLLAMA_BASE_URL.rstrip('/')
+    # 如果 base_url 已经包含 /api，直接使用；否则添加 /api
+    if '/api' not in ollama_base_url:
+        ollama_base_url = f"{ollama_base_url}/api"
+    
     embedder_config = OpenAIEmbedderConfig(
         api_key="not-required",  # Ollama不需要真实key，但需要非空值
         embedding_model=settings.OLLAMA_EMBEDDING_MODEL,
-        base_url=f"{settings.OLLAMA_BASE_URL}/v1"
+        base_url=ollama_base_url
     )
     embedder = OpenAIEmbedder(config=embedder_config)
+    logger.info(f"Graphiti Embedder 配置: base_url={ollama_base_url}, model={settings.OLLAMA_EMBEDDING_MODEL}")
     
     # 配置Cross-encoder (Reranker)
     # 使用与LLM相同的配置，并传入带超时配置的客户端
