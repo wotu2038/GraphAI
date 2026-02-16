@@ -39,6 +39,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: graph-ai-mysql
+    restart: unless-stopped  # 自动重启策略：除非手动停止，否则总是重启
     ports:
       - "3306:3306"
     env_file:
