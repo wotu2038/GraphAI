@@ -5,6 +5,12 @@ echo "================================================"
 echo "🚀 GraphAI Backend 启动流程"
 echo "================================================"
 
+# 设置 HuggingFace 镜像（如果未设置）
+if [ -z "$HF_ENDPOINT" ]; then
+    export HF_ENDPOINT=https://hf-mirror.com
+    echo "📦 设置 HuggingFace 镜像: $HF_ENDPOINT"
+fi
+
 # 1. 初始化 Neo4j 索引
 echo ""
 echo "📊 步骤1: 初始化 Neo4j 索引..."

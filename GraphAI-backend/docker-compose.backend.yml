@@ -92,6 +92,8 @@ services:
       - NEO4J_URI=bolt://neo4j:7687
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
+      # HuggingFace 镜像支持（加速 tokenizer 下载）
+      - HF_ENDPOINT=https://hf-mirror.com
       # 其他配置从.env文件读取
     volumes:
       - ./backend:/app
@@ -116,6 +118,8 @@ services:
       - NEO4J_URI=bolt://neo4j:7687
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
+      # HuggingFace 镜像支持（加速 tokenizer 下载）
+      - HF_ENDPOINT=https://hf-mirror.com
       # 其他配置从.env文件读取
     volumes:
       - ./backend:/app
