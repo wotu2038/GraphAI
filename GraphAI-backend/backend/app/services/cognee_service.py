@@ -17,6 +17,19 @@ logger = logging.getLogger(__name__)
 # Cognee 客户端（延迟导入）
 _cognee = None
 
+# Embedding 并发控制 Semaphore（全局，用于限制同时进行的 embedding 请求数）
+_embedding_semaphore = None
+
+
+def get_embedding_semaphore():
+    """获取 Embedding 并发控制 Semaphore（单例）"""
+    global _embedding_semaphore
+    if _embedding_semaphore is None:
+        max_concurrent = getattr(settings, 'EMBEDDING_MAX_CONCURRENT', 2)
+        _embedding_semaphore = asyncio.Semaphore(max_concurrent)
+        logger.info(f"✅ Embedding 并发限制已设置: max_concurrent={max_concurrent}")
+    return _embedding_semaphore
+
 
 def get_cognee():
     """获取 Cognee 实例（单例）"""
@@ -224,13 +237,16 @@ def get_cognee():
                 from cognee.infrastructure.databases.vector.embeddings.OllamaEmbeddingEngine import OllamaEmbeddingEngine
                 import types
                 
-                # 创建修复后的方法
+                # 创建修复后的方法（带并发限制）
                 async def fixed_get_embedding(self, prompt: str):
-                    """修复后的 _get_embedding 方法，支持 Ollama 标准响应格式"""
+                    """修复后的 _get_embedding 方法，支持 Ollama 标准响应格式，带并发限制"""
                     import aiohttp
                     import os
                     from cognee.shared.utils import create_secure_ssl_context
                     from cognee.shared.rate_limiting import embedding_rate_limiter_context_manager
+                    
+                    # 获取并发控制 Semaphore
+                    semaphore = get_embedding_semaphore()
                     
                     # 修复：从模型名称中移除 "ollama/" 前缀（Ollama API 不接受这个前缀）
                     model_name = self.model
@@ -246,26 +262,29 @@ def get_cognee():
                     
                     ssl_context = create_secure_ssl_context()
                     connector = aiohttp.TCPConnector(ssl=ssl_context)
-                    async with aiohttp.ClientSession(connector=connector) as session:
-                        async with embedding_rate_limiter_context_manager():
-                            async with session.post(
-                                self.endpoint, json=payload, headers=headers, timeout=60.0
-                            ) as response:
-                                data = await response.json()
-                                
-                                # 检查是否有错误
-                                if "error" in data:
-                                    raise ValueError(f"Ollama API error: {data['error']}")
-                                
-                                # 修复：支持 Ollama 的标准响应格式 {'embedding': [...]}
-                                if "embedding" in data:
-                                    return data["embedding"]
-                                elif "embeddings" in data:
-                                    return data["embeddings"][0]
-                                elif "data" in data:
-                                    return data["data"][0]["embedding"]
-                                else:
-                                    raise ValueError(f"Unexpected response format: {list(data.keys())}")
+                    
+                    # 使用 Semaphore 限制并发数
+                    async with semaphore:
+                        async with aiohttp.ClientSession(connector=connector) as session:
+                            async with embedding_rate_limiter_context_manager():
+                                async with session.post(
+                                    self.endpoint, json=payload, headers=headers, timeout=60.0
+                                ) as response:
+                                    data = await response.json()
+                                    
+                                    # 检查是否有错误
+                                    if "error" in data:
+                                        raise ValueError(f"Ollama API error: {data['error']}")
+                                    
+                                    # 修复：支持 Ollama 的标准响应格式 {'embedding': [...]}
+                                    if "embedding" in data:
+                                        return data["embedding"]
+                                    elif "embeddings" in data:
+                                        return data["embeddings"][0]
+                                    elif "data" in data:
+                                        return data["data"][0]["embedding"]
+                                    else:
+                                        raise ValueError(f"Unexpected response format: {list(data.keys())}")
                 
                 # 应用 monkey patch
                 OllamaEmbeddingEngine._get_embedding = fixed_get_embedding

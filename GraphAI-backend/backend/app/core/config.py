@@ -90,6 +90,11 @@ class Settings(BaseSettings):
     # Episode并发处理最大数量
     EPISODE_MAX_CONCURRENT: int = 5
     
+    # ==================== Embedding并发配置 ====================
+    # Embedding 最大并发数（限制同时进行的 embedding 请求数）
+    # 建议值：2-3（8G内存服务器），可根据实际情况调整
+    EMBEDDING_MAX_CONCURRENT: int = 2
+    
     # ==================== Milvus配置（可选）====================
     MILVUS_HOST: str = ""
     MILVUS_PORT: int = 19530
